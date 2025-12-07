@@ -1,5 +1,11 @@
 <?php
 require_once('controllers/cdom.php');
+
+// ✅ Obtener perfil para controlar botones
+$idper = isset($_SESSION['idper']) ? $_SESSION['idper'] : 0;
+$puedeCrear = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
+$puedeEditar = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
+$puedeEliminar = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
 ?>
 <div class="">
 
@@ -8,6 +14,7 @@ require_once('controllers/cdom.php');
     </h2>
 
     <!-- Formulario de Dominio -->
+    <?php if($puedeCrear || isset($datOne)){ ?>
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
             <?= isset($datOne) ? "Editar Dominio" : "Nuevo Dominio"; ?>
@@ -30,13 +37,13 @@ require_once('controllers/cdom.php');
                 <div class="col-md-6">
                     <label for="fec_crea" class="form-label">Fecha de creación</label>
                     <input type="date" name="fec_crea" id="fec_crea" class="form-control" 
-                        value="<?= $datOne[0]['fec_crea'] ?? '' ?>" required>
+                        value="<?= $datOne[0]['fec_crea'] ?? date('Y-m-d') ?>" required>
                 </div>
 
                 <div class="col-md-6 d-flex align-items-end justify-content-end">
                     <input type="hidden" name="iddom" value="<?= $datOne[0]['iddom'] ?? '' ?>">
                     <input type="hidden" name="ope" value="save">
-                    <button type="submit" class=" form-control btn btn-dark">
+                    <button type="submit" class="form-control btn btn-dark">
                         Guardar
                     </button>
                 </div>
@@ -44,6 +51,7 @@ require_once('controllers/cdom.php');
             </form>
         </div>
     </div>
+    <?php } ?>
 
     <!-- Tabla de Dominios -->
     <div class="card shadow-sm">
@@ -52,12 +60,15 @@ require_once('controllers/cdom.php');
         </div>
         <div class="card-body">
             <table id="table" class="table table-striped align-middle">
-                <thead class="table-dark">
+                <thead class="table-light">
                     <tr>
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Fecha de creación</th>
+                        <?php if($idper == 1){ ?>
+                            <th>Empresa</th> <!-- ✅ Columna solo para SuperAdmin -->
+                        <?php } ?>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -68,22 +79,42 @@ require_once('controllers/cdom.php');
                             <td><?= $dt['nomdom']; ?></td>
                             <td><?= $dt['desdom']; ?></td>
                             <td><?= $dt['fec_crea']; ?></td>
+                            
+                            <?php if($idper == 1){ ?>
+                                <!-- ✅ MOSTRAR NOMBRE DE EMPRESA -->
+                                <td>
+                                    <?php if($dt['nomemp']){ ?>
+                                        <span class="badge bg-info">
+                                            <?= $dt['nomemp']; ?>
+                                        </span>
+                                    <?php } else { ?>
+                                        <span class="badge bg-secondary">Sin Empresa</span>
+                                    <?php } ?>
+                                </td>
+                            <?php } ?>
+                            
                             <td class="text-center">
-                                <!-- Botón Editar -->
+                                <!-- ✅ Botón Editar (Solo Admin y SuperAdmin) -->
+                                <?php if($puedeEditar){ ?>
                                 <a href="home.php?pg=<?= $pg; ?>&iddom=<?= $dt['iddom']; ?>&ope=edi" 
                                    class="btn btn-sm btn-outline-warning me-2" title="Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
+                                <?php } ?>
+                                
+                                <!-- ✅ Botón Eliminar (Solo SuperAdmin) -->
+                                <?php if($puedeEliminar){ ?>
                                 <a href="javascript:void(0);"
                                    onclick="confirmarEliminacion('home.php?pg=<?= $pg; ?>&iddom=<?= $dt['iddom']; ?>&ope=eli')"
                                   class="btn btn-sm btn-outline-danger" title="Eliminar">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </a>
+                                <?php } ?>
                             </td>
                         </tr>
                     <?php }} else { ?>
                         <tr>
-                            <td colspan="5" class="text-center text-muted">No hay dominios registrados</td>
+                            <td colspan="<?= $idper == 1 ? 6 : 5 ?>" class="text-center text-muted">No hay dominios registrados</td>
                         </tr>
                     <?php } ?>
                 </tbody>
@@ -132,7 +163,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// Confirmación antes de eliminar
 function confirmarEliminacion(url) {
     Swal.fire({
         title: '¿Estás seguro?',
