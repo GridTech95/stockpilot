@@ -549,4 +549,18 @@ INSERT INTO `usuario_empresa` (`idusu`, `idemp`, `fec_crea`) VALUES
 (12, 3, '2025-11-20 20:55:51'), -- Empleado -> Empresa 3
 (13, 3, '2025-11-21 07:08:29'), -- Empleado -> Empresa 3
 (9, 4, '2025-11-19 23:31:26'),  -- Empleado -> Empresa 4
+
 (5, 4, '2025-11-25 22:00:04'); -- Laura M. (Empleado Faltante) -> Empresa 4
+-- Agregar idemp a la tabla dominio
+ALTER TABLE dominio ADD COLUMN idemp INT(10) AFTER desdom;
+
+-- Agregar idemp a la tabla valor (si también lo necesitas)
+ALTER TABLE valor ADD COLUMN idemp INT(10) AFTER desval;
+
+-- Crear índices para mejorar rendimiento
+ALTER TABLE dominio ADD KEY fk_dom_idemp (idemp);
+ALTER TABLE valor ADD KEY fk_val_idemp (idemp);
+
+-- Agregar llaves foráneas
+ALTER TABLE dominio ADD CONSTRAINT fk_dom_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp);
+ALTER TABLE valor ADD CONSTRAINT fk_val_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp);
