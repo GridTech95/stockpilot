@@ -1,5 +1,11 @@
 <?php
 require_once('controllers/ccat.php');
+
+// ✅ Obtener perfil para controlar botones
+$idper = isset($_SESSION['idper']) ? $_SESSION['idper'] : 0;
+$puedeCrear = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
+$puedeEditar = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
+$puedeEliminar = ($idper == 1 || $idper == 2); // SuperAdmin o Admin
 ?>
 <div class="">
 
@@ -8,6 +14,7 @@ require_once('controllers/ccat.php');
     </h2>
 
     <!-- Formulario de Categoría -->
+    <?php if($puedeCrear || isset($datOne)){ ?>
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
             <?= isset($datOne) ? "Editar Categoría" : "Nueva Categoría"; ?>
@@ -30,7 +37,7 @@ require_once('controllers/ccat.php');
                 <div class="col-md-6">
                     <label for="fec_crea" class="form-label">Fecha de creación</label>
                     <input type="date" name="fec_crea" id="fec_crea" class="form-control"
-                        value="<?= $datOne[0]['fec_crea'] ?? '' ?>" required>
+                        value="<?= $datOne[0]['fec_crea'] ?? date('Y-m-d') ?>" required>
                 </div>
 
                 <div class="col-md-6 d-flex align-items-end">
@@ -44,6 +51,7 @@ require_once('controllers/ccat.php');
             </form>
         </div>
     </div>
+    <?php } ?>
 
     <!-- Tabla de Categorías -->
     <div class="card shadow-sm">
@@ -51,13 +59,16 @@ require_once('controllers/ccat.php');
             <i class="fa-solid fa-list me-1"></i> Listado de Categorías
         </div>
         <div class="card-body">
-            <table class="table table-striped align-middle">
-                <thead class="table-dark">
+            <table id="table" class="table table-striped align-middle">
+                <thead class="table-light">
                     <tr>
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Fecha creación</th>
+                        <?php if($idper == 1){ ?>
+                            <th>Empresa</th> <!-- ✅ Columna solo para SuperAdmin -->
+                        <?php } ?>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
@@ -68,23 +79,40 @@ require_once('controllers/ccat.php');
                             <td><?= $dt['nomcat']; ?></td>
                             <td><?= $dt['descat']; ?></td>
                             <td><?= $dt['fec_crea']; ?></td>
+                            
+                            <?php if($idper == 1){ ?>
+                                <!-- ✅ MOSTRAR NOMBRE DE EMPRESA -->
+                                <td>
+                                    <?php if($dt['nomemp']){ ?>
+                                        <span class="badge bg-info">
+                                            <?= $dt['nomemp']; ?>
+                                        </span>
+                                    <?php } else { ?>
+                                        <span class="badge bg-secondary">Sin Empresa</span>
+                                    <?php } ?>
+                                </td>
+                            <?php } ?>
+                            
                             <td class="text-center">
-
-                                <!-- Botón Editar -->
+                                <!-- ✅ Botón Editar (Solo Admin y SuperAdmin) -->
+                                <?php if($puedeEditar){ ?>
                                 <a href="home.php?pg=<?= $pg; ?>&idcat=<?= $dt['idcat']; ?>&ope=eDi"
                                    class="btn btn-sm btn-outline-warning me-2" title="Editar">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
+                                <?php } ?>
 
-                                <!-- Botón Eliminar con confirmación SweetAlert -->
+                                <!-- ✅ Botón Eliminar (SuperAdmin y Admin/Empresa) -->
+                                <?php if($puedeEliminar){ ?>
                                 <a href="javascript:void(0);"
                                    onclick="confirmarEliminacion('home.php?pg=<?= $pg; ?>&idcat=<?= $dt['idcat']; ?>&ope=eLi')"
                                    class="btn btn-sm btn-outline-danger me-2"
                                    title="Eliminar">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </a>
+                                <?php } ?>
 
-                                <!-- Botón Inventario -->
+                                <!-- Botón Inventario (Todos pueden ver) -->
                                 <a href="home.php?pg=1009&idcat=<?= $dt['idcat']; ?>"
                                    class="btn btn-sm btn-outline-primary" title="Ver Inventario">
                                     <i class="fa-solid fa-boxes-stacked"></i>
@@ -93,7 +121,7 @@ require_once('controllers/ccat.php');
                         </tr>
                     <?php }} else { ?>
                         <tr>
-                            <td colspan="5" class="text-center text-muted">No hay categorías registradas</td>
+                            <td colspan="<?= $idper == 1 ? 6 : 5 ?>" class="text-center text-muted">No hay categorías registradas</td>
                         </tr>
                     <?php } ?>
                 </tbody>
