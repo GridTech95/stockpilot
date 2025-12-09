@@ -36,13 +36,65 @@ if($ope=="SaVe" && $idemp && $idubi){
     $msol->setFec_actu($fec_actu);
 
     $dtE = $msol->getOne();
-    if($dtE) $msol->upd();
-    else $msol->save();
+    
+    if($dtE) {
+        // Capturar datos anteriores
+        require_once('models/maud.php');
+        $datos_ant = json_encode($dtE);
+        
+        $msol->upd();
+        
+        // Registrar auditoría - UPDATE
+        $maud = new MAud();
+        $maud->setIdemp($idemp);
+        $maud->setIdusu($_SESSION['idusu']);
+        $maud->setTabla('solsalida');
+        $maud->setAccion(2); // 2=UPDATE
+        $maud->setIdreg($idsol);
+        $maud->setDatos_ant($datos_ant);
+        $maud->setDatos_nue(json_encode($_POST));
+        $maud->setFecha(date('Y-m-d H:i:s'));
+        $maud->setIp($_SERVER['REMOTE_ADDR']);
+        $maud->save();
+    } else {
+        $msol->save();
+        
+        // Registrar auditoría - INSERT
+        require_once('models/maud.php');
+        $maud = new MAud();
+        $maud->setIdemp($idemp);
+        $maud->setIdusu($_SESSION['idusu']);
+        $maud->setTabla('solsalida');
+        $maud->setAccion(1); // 1=INSERT
+        $maud->setIdreg($msol->getIdsol());
+        $maud->setDatos_ant(null);
+        $maud->setDatos_nue(json_encode($_POST));
+        $maud->setFecha(date('Y-m-d H:i:s'));
+        $maud->setIp($_SERVER['REMOTE_ADDR']);
+        $maud->save();
+    }
 }
 
 // Eliminar
 if($ope=="eLi" && $idsol){
+    // Capturar datos antes de eliminar
+    require_once('models/maud.php');
+    $datos_ant = json_encode($msol->getOne());
+    
     $msol->del();
+    
+    // Registrar auditoría - DELETE
+    $maud = new MAud();
+    $maud->setIdemp($_SESSION['idemp'] ?? null);
+    $maud->setIdusu($_SESSION['idusu']);
+    $maud->setTabla('solsalida');
+    $maud->setAccion(3); // 3=DELETE
+    $maud->setIdreg($idsol);
+    $maud->setDatos_ant($datos_ant);
+    $maud->setDatos_nue(null);
+    $maud->setFecha(date('Y-m-d H:i:s'));
+    $maud->setIp($_SERVER['REMOTE_ADDR']);
+    $maud->save();
 }
 
 // Editar (traer uno)
