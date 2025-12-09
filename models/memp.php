@@ -395,5 +395,55 @@ public function editByEmpresa(){
     }
 }
 
+
+public function getCrecimientoHistorico($year = null) {
+    try {
+        $modelo = new conexion();
+        $conexion = $modelo->get_conexion();
+
+        // 1. CONDICIÓN BASE: Siempre excluimos registros sin fecha
+        $whereClause = "WHERE e1.fec_crea IS NOT NULL";
+
+        // 2. LÓGICA DE FILTRADO
+        if ($year !== null && is_numeric($year)) {
+            // A) FILTRO ESPECÍFICO POR AÑO: Anulamos el límite de 12 meses.
+            // Esto se activa cuando el usuario selecciona un año (ej: 2025).
+            $whereClause .= " AND YEAR(e1.fec_crea) = :year";
+        } else {
+            // B) FILTRO POR DEFECTO (AÑO NULL): Limitamos a los últimos 12 meses.
+            // Esto se activa al cargar la página por primera vez o si eligen "Todo el Histórico".
+            $whereClause .= " AND e1.fec_crea >= DATE_SUB(NOW(), INTERVAL 12 MONTH)";
+        }
+        
+        $sql = "
+            SELECT 
+                DATE_FORMAT(e1.fec_crea, '%b %Y') AS etiqueta_mes,
+                (
+                    SELECT COUNT(e2.idemp) 
+                    FROM empresa e2
+                    WHERE DATE_FORMAT(e2.fec_crea, '%Y%m') <= DATE_FORMAT(e1.fec_crea, '%Y%m')
+                ) AS conteo_acumulado
+            FROM empresa e1
+            " . $whereClause . "
+            GROUP BY etiqueta_mes, DATE_FORMAT(e1.fec_crea, '%Y%m')
+            ORDER BY DATE_FORMAT(e1.fec_crea, '%Y%m') ASC
+        ";
+
+        $result = $conexion->prepare($sql);
+
+        // Ligamos el parámetro del año si existe
+        if ($year !== null && is_numeric($year)) {
+            $result->bindParam(':year', $year, PDO::PARAM_INT);
+        }
+
+        $result->execute();
+        
+        return $result->fetchAll(PDO::FETCH_ASSOC);
+
+    } catch (PDOException $e) {
+        error_log("Error en getCrecimientoHistorico: " . $e->getMessage());
+        return [];
+    }
+}
 }
 ?>

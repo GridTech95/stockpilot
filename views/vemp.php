@@ -27,6 +27,21 @@ if ($perfil == 1 && !isset($totalEmpresas)) {
     }
 }
 // =========================================================================
+
+// 🔑 CAMBIOS NECESARIOS EN PHP: OBTENER LOS AÑOS PARA EL FILTRO
+// --------------------------------------------------------------------------
+// NOTA: ASUMO que el controlador ya te trae el año actual o lo que sea necesario.
+// Si deseas obtener el listado real de años con datos (ej. 2020, 2021, 2022...)
+// debes agregar en cemp.php la lógica para llamar a $memp->getAniosConDatos()
+// y pasar la lista ($listaAnios) a esta vista.
+$primerAnio = 2020; // Reemplazar con el primer año real de la DB
+$anioActual = date('Y');
+$listaAnios = range($anioActual, $primerAnio); // Lista de años disponibles (ej: 2025, 2024, 2023, ...)
+
+// El año seleccionado actualmente (del controlador/URL)
+// Se usa $year del controlador cemp.php, si no existe, usa el actual (o null si el controlador lo maneja)
+$yearSeleccionado = isset($_REQUEST['year']) && is_numeric($_REQUEST['year']) ? (int)$_REQUEST['year'] : $anioActual;
+// --------------------------------------------------------------------------
 // =========================================================================
 
 
@@ -134,8 +149,26 @@ if ($perfil == 1) {
                 <canvas id="empresasActivasChart"></canvas>
             </div>
         </div>
+        
         <div class="col-lg-6">
             <div class="chart-container">
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 text-dark">Crecimiento Histórico</h5>
+                    <div class="input-group input-group-sm w-auto">
+                        <span class="input-group-text">Año:</span>
+                        <select id="filtroAnio" class="form-select" onchange="cambiarAnio(this.value)">
+                            <?php foreach ($listaAnios as $year): ?>
+                                <option value="<?= $year; ?>" <?= ($year == $yearSeleccionado) ? 'selected' : ''; ?>>
+                                    <?= $year; ?>
+                                </option>
+                            <?php endforeach; ?>
+                            <option value="" <?= ($yearSeleccionado === null || $yearSeleccionado == 0) ? 'selected' : ''; ?>>
+                                Últimos 12 Meses (Default)
+                            </option>
+                        </select>
+                    </div>
+                </div>
                 <canvas id="otroGrafico"></canvas>
             </div>
         </div>
@@ -218,106 +251,139 @@ if ($perfil == 1) {
 </div>
 
 <div class="modal fade" id="empresaFormModal" tabindex="-1" aria-labelledby="empresaFormModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header modal-header-custom">
-        <h5 class="modal-title" id="empresaFormModalLabel">
-            <i class="fa-solid fa-building me-2"></i>
-            <?php echo ($datOne && $datOne[0]['idemp']) ? 'Editar Empresa' : 'Registrar Nueva Empresa'; ?>
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-custom">
+        <h5 class="modal-title" id="empresaFormModalLabel">
+            <i class="fa-solid fa-building me-2"></i>
+            <?php echo ($datOne && $datOne[0]['idemp']) ? 'Editar Empresa' : 'Registrar Nueva Empresa'; ?>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
 
-      <form action="home.php?pg=<?=$pg;?>" method="POST" enctype="multipart/form-data">
-        <div class="modal-body">
-            <div class="row g-3">
+      <form action="home.php?pg=<?=$pg;?>" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+            <div class="row g-3">
 
-                <div class="form-group col-md-6">
-                    <label for="nomemp">Nombre Empresa</label>
-                    <input type="text" name="nomemp" id="nomemp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['nomemp']) echo htmlspecialchars($datOne[0]['nomemp']); ?>" required>
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="nomemp">Nombre Empresa</label>
+                    <input type="text" name="nomemp" id="nomemp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['nomemp']) echo htmlspecialchars($datOne[0]['nomemp']); ?>" required>
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="razemp">Razón Social</label>
-                    <input type="text" name="razemp" id="razemp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['razemp']) echo htmlspecialchars($datOne[0]['razemp']); ?>" required>
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="razemp">Razón Social</label>
+                    <input type="text" name="razemp" id="razemp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['razemp']) echo htmlspecialchars($datOne[0]['razemp']); ?>" required>
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="nitemp">NIT</label>
-                    <input type="text" name="nitemp" id="nitemp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['nitemp']) echo htmlspecialchars($datOne[0]['nitemp']); ?>" required>
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="nitemp">NIT</label>
+                    <input type="text" name="nitemp" id="nitemp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['nitemp']) echo htmlspecialchars($datOne[0]['nitemp']); ?>" required>
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="diremp">Dirección</label>
-                    <input type="text" name="diremp" id="diremp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['diremp']) echo htmlspecialchars($datOne[0]['diremp']); ?>" required>
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="diremp">Dirección</label>
+                    <input type="text" name="diremp" id="diremp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['diremp']) echo htmlspecialchars($datOne[0]['diremp']); ?>" required>
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="telemp">Teléfono</label>
-                    <input type="text" name="telemp" id="telemp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['telemp']) echo htmlspecialchars($datOne[0]['telemp']); ?>">
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="telemp">Teléfono</label>
+                    <input type="text" name="telemp" id="telemp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['telemp']) echo htmlspecialchars($datOne[0]['telemp']); ?>">
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="emaemp">Email</label>
-                    <input type="email" name="emaemp" id="emaemp" class="form-control" 
-                        value="<?php if($datOne && $datOne[0]['emaemp']) echo htmlspecialchars($datOne[0]['emaemp']); ?>">
-                </div>
+                <div class="form-group col-md-6">
+                    <label for="emaemp">Email</label>
+                    <input type="email" name="emaemp" id="emaemp" class="form-control" 
+                        value="<?php if($datOne && $datOne[0]['emaemp']) echo htmlspecialchars($datOne[0]['emaemp']); ?>">
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="logo_file">Logo de la Empresa</label>
+                <div class="form-group col-md-6">
+                    <label for="logo_file">Logo de la Empresa</label>
 
-                    <?php if ($datOne && $datOne[0]['idemp'] && !empty($datOne[0]['logo'])): ?>
-                        <p>Logo actual:</p>
-                        <img src="img/logos/<?php echo htmlspecialchars($datOne[0]['logo']); ?>" 
-                             alt="Logo Empresa" 
-                             style="max-width: 100px; max-height: 100px; margin-bottom: 10px;">
-                        <br>
-                    <?php endif; ?>
+                    <?php if ($datOne && $datOne[0]['idemp'] && !empty($datOne[0]['logo'])): ?>
+                        <p>Logo actual:</p>
+                        <img src="img/logos/<?php echo htmlspecialchars($datOne[0]['logo']); ?>" 
+                             alt="Logo Empresa" 
+                             style="max-width: 100px; max-height: 100px; margin-bottom: 10px;">
+                        <br>
+                    <?php endif; ?>
 
-                    <input type="file" class="form-control-file" id="logo_file" name="logo_file" accept="image/*">
-                    <small class="form-text text-muted">Sube una nueva imagen (JPG, PNG, GIF, etc.).</small>
-                </div>
+                    <input type="file" class="form-control-file" id="logo_file" name="logo_file" accept="image/*">
+                    <small class="form-text text-muted">Sube una nueva imagen (JPG, PNG, GIF, etc.).</small>
+                </div>
 
-                <div class="form-group col-md-6">
-                    <label for="act">Estado (ID)</label>
-                    <select name="act" id="act" class="form-control">
-                        <option value="1" <?php if($datOne && $datOne[0]['act'] == 1) echo 'selected'; ?>>Activa (1)</option>
-                        <option value="0" <?php if($datOne && $datOne[0]['act'] == 0) echo 'selected'; ?>>Inactiva (0)</option>
-                    </select>
+                <div class="form-group col-md-6">
+                    <label for="act">Estado (ID)</label>
+                    <select name="act" id="act" class="form-control">
+                        <option value="1" <?php if($datOne && $datOne[0]['act'] == 1) echo 'selected'; ?>>Activa (1)</option>
+                        <option value="0" <?php if($datOne && $datOne[0]['act'] == 0) echo 'selected'; ?>>Inactiva (0)</option>
+                    </select>
 
-                    <input type="hidden" name="estado" id="estado" 
-                        value="<?php if($datOne && $datOne[0]['estado']) echo htmlspecialchars($datOne[0]['estado']); else echo 'Activa'; ?>">
-                </div>
+                    <input type="hidden" name="estado" id="estado" 
+                        value="<?php if($datOne && $datOne[0]['estado']) echo htmlspecialchars($datOne[0]['estado']); else echo 'Activa'; ?>">
+                </div>
 
-            </div>
-        </div>
+            </div>
+        </div>
 
-        <div class="modal-footer">
-            <input type="hidden" name="idemp" 
-                value="<?php if($datOne && $datOne[0]['idemp']) echo htmlspecialchars($datOne[0]['idemp']); ?>">
+        <div class="modal-footer">
+            <input type="hidden" name="idemp" 
+                value="<?php if($datOne && $datOne[0]['idemp']) echo htmlspecialchars($datOne[0]['idemp']); ?>">
 
-            <input type="hidden" name="ope" 
-                value="<?php echo ($datOne && $datOne[0]['idemp']) ? 'save' : 'save_reg'; ?>">
+            <input type="hidden" name="ope" 
+                value="<?php echo ($datOne && $datOne[0]['idemp']) ? 'save' : 'save_reg'; ?>">
 
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <input type="submit" class="btn btn-create-empresa" 
-                value="<?php echo ($datOne && $datOne[0]['idemp']) ? 'Actualizar' : 'Guardar Empresa'; ?>">
-        </div>
-      </form>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <input type="submit" class="btn btn-create-empresa" 
+                value="<?php echo ($datOne && $datOne[0]['idemp']) ? 'Actualizar' : 'Guardar Empresa'; ?>">
+        </div>
+      </form>
 
-    </div>
-  </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    
+    // ===========================================================================
+    // 🔑 CAMBIO 3: FUNCIÓN JAVASCRIPT PARA FILTRAR POR AÑO
+    // --------------------------------------------------------------------------
+    /**
+     * Recarga la página con el nuevo parámetro de año en la URL.
+     * @param {string} year - El año seleccionado. Si es una cadena vacía, se usa el filtro por defecto (12 meses).
+     */
+    function cambiarAnio(year) {
+        // Obtenemos la URL base (sin parámetros)
+        let url = window.location.href.split('?')[0];
+        
+        // Creamos nuevos parámetros, manteniendo los existentes (como pg)
+        let params = new URLSearchParams(window.location.search);
+        
+        // Borramos el parámetro 'year' anterior si existe
+        params.delete('year');
+        
+        // Si se selecciona un año, lo añadimos a los parámetros
+        if (year && year !== '' && !isNaN(parseInt(year))) {
+            params.set('year', year);
+        } else {
+            // Si es cadena vacía (opción "Últimos 12 Meses"), simplemente no añadimos 'year'
+            // para que el controlador use su lógica por defecto (últimos 12 meses).
+        }
+        
+        // Reconstruimos la URL y navegamos
+        // Conservamos los parámetros existentes (como 'pg') y añadimos el nuevo (o ninguno)
+        window.location.href = url + '?' + params.toString();
+    }
+    // --------------------------------------------------------------------------
+    // ===========================================================================
+
     // Tu Script de SweetAlert y DataTables... (Se mantiene sin cambios, solo se asegura de que el DataTables se inicialice)
     
     // ===========================================================================
@@ -392,8 +458,9 @@ if ($perfil == 1) {
         
         // 🔑 CLAVE: Limpiar la URL después de mostrar la alerta para evitar reaparición
         if (showSwal && history.replaceState) {
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.search.replace(/(\?|&)(msg|message|error)=[^&]*/g, '').replace(/^&/, '?');
-            history.replaceState(null, '', newUrl);
+            // Se usa una expresión regular más segura para limpiar múltiples parámetros
+            const cleanUrl = window.location.href.replace(/(\?|&)(msg|message|error|idemp|ope)=[^&]*/g, '').replace(/^&/, '?');
+            history.replaceState(null, '', cleanUrl);
         }
         
         // CLAVE: Lógica para abrir el modal automáticamente en modo edición (ope=edi)
@@ -520,41 +587,64 @@ if ($perfil == 1) {
             });
         }
         
-        // Gráfico de Ejemplo (Línea): Para que veas un ejemplo de otro gráfico
+        // ... (LÓGICA ANTERIOR DEL GRÁFICO DONUT ctx1)
+
+        // ===========================================================================
+        // LÓGICA DE GRÁFICAS (Requiere Chart.js) - Crecimiento Histórico
+        // ===========================================================================
+        // Gráfico de Crecimiento Histórico (Línea): Usando datos REALES del controlador
         const ctx2 = document.getElementById('otroGrafico');
         if (ctx2) {
-            new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Crecimiento de Nuevas Empresas (Ejemplo)',
-                        data: [1, 3, 4, 6, 8, 10], // Datos de ejemplo
-                        borderColor: 'rgba(52, 58, 64, 1)', // Gris oscuro/Negro
-                        backgroundColor: 'rgba(52, 58, 64, 0.2)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Crecimiento Histórico de Empresas (Ejemplo)',
-                            font: {
-                                size: 16
+            var crecimientoHistorico = <?php echo $jsonCrecimiento ?? "{}"; ?>; 
+            
+            var labels = crecimientoHistorico.meses || [];
+            var data = crecimientoHistorico.acumulado || [];
+            
+            if (labels.length > 0 && data.length > 0) {
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: labels, 
+                        datasets: [{
+                            label: 'Crecimiento Histórico Acumulado',
+                            data: data,
+                            // 🔑 ESTILO EXACTO SOLICITADO
+                            borderColor: 'rgba(52, 58, 64, 1)', // Línea Negra
+                            backgroundColor: 'rgba(52, 58, 64, 0.2)', // Sombreado Gris Claro (20% opacidad del negro)
+                            fill: true, 
+                            tension: 0.3, 
+                            borderWidth: 2, 
+                            pointRadius: 5 
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Crecimiento Histórico Acumulado de Empresas',
+                                font: { size: 16 }
+                            }
+                        },
+                        // 🔑 EJE Y SOLO CON ENTEROS
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        if (Math.floor(value) === value) {
+                                            return value;
+                                        }
+                                    }
+                                }
                             }
                         }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
                     }
-                }
-            });
+                });
+            } else {
+                ctx2.parentNode.innerHTML = '<p class="text-center mt-5 text-muted">No hay datos suficientes para el gráfico de crecimiento.</p>';
+            }
         }
         // ===========================================================================
     });

@@ -8,46 +8,37 @@
     <style>
         /* 1. ESTILOS DEL CONTENEDOR (HEADER) */
         .header-limpio {
-            /* IMPORTANTE: No hay background-color o imagen aquí */
-            height: 80px; /* Define la altura donde se centrará el texto */
+            height: 80px;
             width: 100%;
-            
-            /* Configuraciones de FLEXBOX para CENTRADO PERFECTO */
             display: flex;
-            align-items: center; /* Centrado Vertical */
-            justify-content: center; /* Centrado Horizontal */
-            
-            /* El fondo real del recuadro azul lo manejará tu CSS principal o tu framework. 
-               Aquí forzamos la transparencia total: */
-            background: none; 
-            background-color: transparent; 
+            align-items: center;
+            justify-content: center;
+            background: none;
+            background-color: transparent;
             border: none;
             box-shadow: none;
         }
 
         /* 2. ESTILO DEL TEXTO "StockPilot" */
         .titulo-cabecera-final {
-            font-family: 'Lato', sans-serif; /* Fuente limpia y legible */
-            
-            /* Color de texto blanco (asumiendo que el fondo de tu cabecera es oscuro) */
-            color: #ffffff; 
-            
-            /* Tamaño: Visible pero elegante (2.8em) */
-            font-size: 2.8em; 
-            font-weight: 700; /* Negrita para buen impacto visual */
-            
-            /* Espaciado para un look refinado */
-            letter-spacing: 4px; 
-            
-            /* Sombra de texto SUTIL, para que el texto "flote" sobre el fondo azul 
-               sin tener un fondo propio (simula un PNG sin fondo) */
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4); 
-            
+            font-family: 'Lato', sans-serif;
+            color: #ffffff;
+            font-size: 2.8em;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.4);
             margin: 0;
             padding: 0;
-            line-height: 1; /* Asegura que no haya espacio extra vertical */
+            line-height: 1;
         }
 
+        /* 3. MEDIA QUERY PARA RESPONSIVE */
+        @media (max-width: 600px) {
+            .titulo-cabecera-final {
+                font-size: 1.8em;
+                letter-spacing: 2px;
+            }
+        }
     </style>
 </head>
 <body>

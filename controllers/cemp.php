@@ -25,6 +25,10 @@ $pg = isset($_REQUEST['pg']) ? $_REQUEST['pg'] : 1001;
 $perfil = $_SESSION['idper'] ?? 0;
 $idusu_sesion = $_SESSION['idusu'] ?? 0;
 
+// 🔑 CAMBIO 1: Capturar la variable 'year' de la solicitud (puede ser NULL)
+$year = isset($_REQUEST['year']) && is_numeric($_REQUEST['year']) ? (int)$_REQUEST['year'] : NULL;
+
+
 // ===== Asignar ID =====
 $memp->setIdemp($idemp);
 
@@ -184,5 +188,37 @@ if ($ope == "edi" && $idemp) {
 }
 
 $datAll = $memp->getAll();
+
+
+// =========================================================================
+// !!! LÓGICA: CARGA DE DATOS PARA GRÁFICO DE CRECIMIENTO HISTÓRICO !!!
+// =========================================================================
+
+// 🔑 CAMBIO 2: Pasamos la variable $year (que puede ser NULL o un número) al modelo.
+// El modelo aplicará el filtro de 12 meses si $year es NULL.
+$crecimientoData = $memp->getCrecimientoHistorico($year); 
+
+$meses = [];
+$acumulado = [];
+
+if (is_array($crecimientoData) && !empty($crecimientoData)) {
+    // Recorrer los datos obtenidos de la BD
+    foreach ($crecimientoData as $row) {
+        // Asegurarse de que las claves del array coincidan con lo que devuelve el modelo.
+        $meses[] = $row['etiqueta_mes']; 
+        $acumulado[] = (int) $row['conteo_acumulado']; // Castear a entero
+    }
+}
+
+// Convertir los datos a formato JSON para que JavaScript los pueda leer
+$crecimientoHistorico = [
+    'meses' => $meses,
+    'acumulado' => $acumulado
+];
+
+// Variable final que se pasa a la vista (usada en el script del punto 2 anterior)
+$jsonCrecimiento = json_encode($crecimientoHistorico);
+
+// =========================================================================
 
 ?>
