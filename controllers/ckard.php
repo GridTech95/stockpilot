@@ -49,38 +49,67 @@ if ($ope == "save") {
     $maud = new MAud();
     $accion = $idkar ? 2 : 1; // 1=INSERT, 2=UPDATE
     $datos_ant = $idkar ? json_encode($mkard->getOne()) : null;
+    
+    $resultado = false;
     if (!$idkar) {
-        $mkard->save();
-        $idreg = $mkard->getIdkar();
+        $idreg = $mkard->save();
+        if($idreg) $resultado = true;
     } else {
-        $mkard->edit();
+        $resultado = $mkard->edit();
         $idreg = $idkar;
     }
-    $maud->setIdusu($_SESSION['idusu']);
-    $maud->setTabla('kardex');
-    $maud->setAccion($accion);
-    $maud->setIdreg($idreg);
-    $maud->setDatos_ant($datos_ant);
-    $maud->setDatos_nue(json_encode($_POST));
-    $maud->setFecha(date('Y-m-d H:i:s'));
-    $maud->setIp($_SERVER['REMOTE_ADDR']);
-    $maud->save();
+
+    if($resultado){
+        $maud->setIdemp($_SESSION['idemp']);
+        $maud->setIdusu($_SESSION['idusu']);
+        $maud->setTabla('kardex');
+        $maud->setAccion($accion);
+        $maud->setIdreg($idreg);
+        $maud->setDatos_ant($datos_ant);
+        $maud->setDatos_nue(json_encode($_POST));
+        $maud->setFecha(date('Y-m-d H:i:s'));
+        $maud->setIp($_SERVER['REMOTE_ADDR']);
+        $maud->save();
+        
+        $_SESSION['mensaje'] = "Kardex guardado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al guardar el Kardex";
+        $_SESSION['tipo_mensaje'] = "danger";
+    }
+    
+    // Redireccionar con JavaScript
+    echo "<script>window.location.href='home.php?pg=1007';</script>";
+    exit();
 }
 
 // Eliminar kardex
 if ($ope == "eli" && $idkar) {
     require_once __DIR__ . '/../models/maud.php';
     $maud = new MAud();
-    $maud->setIdusu($_SESSION['idusu']);
-    $maud->setTabla('kardex');
-    $maud->setAccion(3); // 3=DELETE
-    $maud->setIdreg($idkar);
-    $maud->setDatos_ant(json_encode($mkard->getOne()));
-    $maud->setDatos_nue(null);
-    $maud->setFecha(date('Y-m-d H:i:s'));
-    $maud->setIp($_SERVER['REMOTE_ADDR']);
-    $maud->save();
-    $mkard->del();
+    $datos_ant = json_encode($mkard->getOne());
+    
+    if($mkard->del()){
+        $maud->setIdemp($_SESSION['idemp']);
+        $maud->setIdusu($_SESSION['idusu']);
+        $maud->setTabla('kardex');
+        $maud->setAccion(3); // 3=DELETE
+        $maud->setIdreg($idkar);
+        $maud->setDatos_ant($datos_ant);
+        $maud->setDatos_nue(null);
+        $maud->setFecha(date('Y-m-d H:i:s'));
+        $maud->setIp($_SERVER['REMOTE_ADDR']);
+        $maud->save();
+        
+        $_SESSION['mensaje'] = "Kardex eliminado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al eliminar el Kardex";
+        $_SESSION['tipo_mensaje'] = "danger";
+    }
+    
+    echo "<script>window.location.href='home.php?pg=1007';</script>";
+    exit();
 }
 
 // Editar kardex
@@ -91,26 +120,41 @@ if ($ope == "edi" && $idkar) {
 // ✅ Guardar movimiento
 if ($ope == "addmov" && $idkar) {
     $data = [
-        "idkar"   => $idkar,
-        "idprod"  => $_POST['idprod'],
-        "tipmov"  => $_POST['tipmov'],
-        "cantmov" => $_POST['cantmov'],
-        "valmov"  => $_POST['valmov'],
-        "docref"  => $_POST['docref'],
-        "obs"     => $_POST['obs']
+        ':idkar'   => $idkar,
+        ':idprod'  => $_POST['idprod'],
+        ':idubi'   => $_POST['idubi'], // added location
+        ':tipmov'  => $_POST['tipmov'],
+        ':cantmov' => $_POST['cantmov'],
+        ':valmov'  => $_POST['valmov'],
+        ':docref'  => $_POST['docref'],
+        ':obs'     => $_POST['obs'],
+        ':idusu'   => $_SESSION['idusu'] // added user for audit
     ];
-    $mkard->saveMovimiento($data);
-    require_once __DIR__ . '/../models/maud.php';
-    $maud = new MAud();
-    $maud->setIdusu($_SESSION['idusu']);
-    $maud->setTabla('movim');
-    $maud->setAccion(1); // 1=INSERT
-    $maud->setIdreg($idkar);
-    $maud->setDatos_ant(null);
-    $maud->setDatos_nue(json_encode($data));
-    $maud->setFecha(date('Y-m-d H:i:s'));
-    $maud->setIp($_SERVER['REMOTE_ADDR']);
-    $maud->save();
+    
+    $idmov = $mkard->saveMovimiento($data);
+    if($idmov){
+        require_once __DIR__ . '/../models/maud.php';
+        $maud = new MAud();
+        $maud->setIdemp($_SESSION['idemp']);
+        $maud->setIdusu($_SESSION['idusu']);
+        $maud->setTabla('movim');
+        $maud->setAccion(1); // 1=INSERT
+        $maud->setIdreg($idmov); // ID del movimiento
+        $maud->setDatos_ant(null);
+        $maud->setDatos_nue(json_encode($data));
+        $maud->setFecha(date('Y-m-d H:i:s'));
+        $maud->setIp($_SERVER['REMOTE_ADDR']);
+        $maud->save();
+        
+        $_SESSION['mensaje'] = "Movimiento registrado exitosamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al registrar el movimiento";
+        $_SESSION['tipo_mensaje'] = "danger";
+    }
+    
+    echo "<script>window.location.href='home.php?pg=1007';</script>";
+    exit();
 }
 
 // ✅ Consultar movimientos si hay kardex seleccionado

@@ -80,12 +80,18 @@ class MUbi{
         $this->act = $act;
     }
 
-    public function getAll(){
+    public function getAll($idemp = null){
         try{
             $sql = "SELECT idubi, nomubi, codubi, dirubi, depubi, ciuubi, idemp, idresp, fec_crea, fec_actu, act FROM ubicacion";
+            if($idemp){
+                $sql .= " WHERE idemp = :idemp";
+            }
             $modelo = new conexion();
             $conexion = $modelo->get_conexion();
             $result = $conexion->prepare($sql);
+            if($idemp){
+                $result->bindParam(':idemp', $idemp);
+            }
             $result->execute();
             $res = $result->fetchAll(PDO::FETCH_ASSOC);
             return $res;
@@ -137,10 +143,12 @@ class MUbi{
             $act = $this->getAct();
             $result->bindParam(':act', $act);
             $result->execute();
-            $res = $result->fetchAll(PDO::FETCH_ASSOC);
-            return $res;
+            
+            // Retornar el ID del registro insertado
+            return $conexion->lastInsertId();
         }catch(Exception $e){
-            echo "Error".$e."<br><br>";
+            error_log("Error en MUbi::save() - " . $e->getMessage());
+            return false;
         }
     }
 
@@ -173,10 +181,11 @@ class MUbi{
             $act = $this->getAct();
             $result->bindParam(':act', $act);
             $result->execute();
-            $res = $result->fetchAll(PDO::FETCH_ASSOC);
-            return $res;
+            
+            return true;
         }catch(Exception $e){
-            echo "Error".$e."<br><br>";
+            error_log("Error en MUbi::edit() - " . $e->getMessage());
+            return false;
         }
     }
 
@@ -189,10 +198,11 @@ class MUbi{
             $idubi = $this->getIdubi();
             $result->bindParam(':idubi', $idubi);
             $result->execute();
-            $res = $result->fetchAll(PDO::FETCH_ASSOC);
-            return $res;
+            
+            return true;
         }catch(Exception $e){
-            echo "Error".$e."<br><br>";
+            error_log("Error en MUbi::del() - " . $e->getMessage());
+            return false;
         }
     }
 }

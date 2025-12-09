@@ -16,8 +16,19 @@ $ip = isset($_POST['ip']) ? $_POST['ip']:NULL;
 $ope = isset($_REQUEST['ope']) ? $_REQUEST['ope']:NULL;
 $datOne = NULL;
 
+// Obtener empresa de la sesión
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$idemp_sesion = isset($_SESSION['idemp']) ? $_SESSION['idemp'] : null;
+
+// DEBUG: Descomentar para ver qué valor tiene idemp_sesion
+// echo "<pre>DEBUG - idemp_sesion: " . var_export($idemp_sesion, true) . "</pre>";
+// echo "<pre>DEBUG - SESSION completa: " . var_export($_SESSION, true) . "</pre>";
+
 $maud->setIdaud($idaud);
 if($ope == "save"){
+    $maud->setIdemp($idemp_sesion); // Agregar empresa de la sesión
     $maud->setIdusu($idusu);
     $maud->setTabla($tabla);
     $maud->setAccion($accion);
@@ -29,8 +40,15 @@ if($ope == "save"){
     if(!$idaud) $maud->save(); else $maud->edit();
 }
 
+if($ope == "clear_logins"){
+    $maud->vaciarLogins($idemp_sesion);
+    header("Location: ../home.php?pg=1010"); // Redirigir a la vista de auditoría (ajustar pg si es necesario)
+    exit;
+}
+
 if($ope =="eli" && $idaud) $maud->del();
 if($ope =="edi" && $idaud) $datOne = $maud->getOne();
 
-$datAll = $maud->getAll();
+// Filtrar auditoría por empresa
+$datAll = $maud->getAll($idemp_sesion);
 ?>
