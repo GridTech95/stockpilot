@@ -3,7 +3,9 @@
 
 // 1. Procesar la empresa (cemp.php) si es una operación de 'save'
 // NOTA: Usamos $_REQUEST ya que puede venir de GET (para editar) o POST (para guardar).
-if (isset($_REQUEST['ope']) && $_REQUEST['ope'] == 'save' && isset($_REQUEST['idemp'])) {
+// CORRECCIÓN: Solo ejecutar Cemp.php si estamos en la página de empresas (pg=1001 o no definido)
+$pg = isset($_REQUEST['pg']) ? $_REQUEST['pg'] : NULL;
+if (isset($_REQUEST['ope']) && $_REQUEST['ope'] == 'save' && isset($_REQUEST['idemp']) && (!$pg || $pg == 1001)) {
     // Si la operación es guardar, ejecuta Cemp.php inmediatamente.
     // Cemp.php tiene la lógica de redirección con exit();
     require_once("controllers/Cemp.php"); 
@@ -70,7 +72,7 @@ require_once("models/seg.php");
              elseif($pg==1005)
                 require_once("views/vcat.php"); // 1005: Categorías
              elseif($pg==1006)
-                require_once("views/vaukard.php"); // 1006: Auditoría
+                require_once("views/vaud.php"); // 1006: Auditoría
              elseif($pg==1007)
                 require_once("views/vkard.php"); // 1007: Kardex
              elseif($pg==1008)
