@@ -15,9 +15,12 @@ class Msoent {
     // Obtener todos los detalles de entrada
     public function getAll($idsol) {
         try {
-            $sql = "SELECT d.iddet, d.idsol, d.idprod, p.nomprod, d.cantdet, d.vundet, d.totdet
+            // Usamos LEFT JOIN para mostrar el registro aunque el producto no exista
+            // Usamos COALESCE para manejar valores nulos si el producto fue borrado
+            $sql = "SELECT d.iddet, d.idsol, d.idprod, COALESCE(p.nomprod, 'Producto no encontrado') as nomprod, 
+                           d.cantdet, d.vundet, (d.cantdet * d.vundet) as totdet
                     FROM detentrada d
-                    INNER JOIN producto p ON d.idprod = p.idprod
+                    LEFT JOIN producto p ON d.idprod = p.idprod
                     WHERE d.idsol = :idsol AND d.idemp = :idemp
                     ORDER BY d.iddet DESC";
             
@@ -30,7 +33,7 @@ class Msoent {
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error en getAll: " . $e->getMessage());
+            error_log("Error en Msoent::getAll() - " . $e->getMessage());
             return [];
         }
     }
@@ -38,12 +41,14 @@ class Msoent {
     // Guardar detalle
     public function save($data) {
         try {
-            $sql = "INSERT INTO detentrada (idsol, idprod, cantdet, vundet, totdet, idemp)
-                    VALUES (:idsol, :idprod, :cantdet, :vundet, :totdet, :idemp)";
+            $sql = "INSERT INTO detentrada (idsol, idprod, cantdet, vundet, idemp, fec_crea)
+                    VALUES (:idsol, :idprod, :cantdet, :vundet, :idemp, NOW())";
             
             $modelo = new conexion();
             $conexion = $modelo->get_conexion();
             $stmt = $conexion->prepare($sql);
+            
+            if(isset($data[':totdet'])) unset($data[':totdet']);
             
             $result = $stmt->execute($data);
             
@@ -53,12 +58,12 @@ class Msoent {
             
             return true;
         } catch (PDOException $e) {
-            error_log("Error en save: " . $e->getMessage());
+            error_log("Error en Msoent::save() - " . $e->getMessage());
             return false;
         }
     }
 
-    // Eliminar detalle (opcional)
+    // Eliminar detalle
     public function delete($iddet) {
         try {
             $sql = "DELETE FROM detentrada WHERE iddet = :iddet AND idemp = :idemp";
@@ -70,7 +75,7 @@ class Msoent {
             
             return $stmt->execute();
         } catch (PDOException $e) {
-            error_log("Error en delete: " . $e->getMessage());
+            error_log("Error en Msoent::delete() - " . $e->getMessage());
             return false;
         }
     }
@@ -78,7 +83,7 @@ class Msoent {
     // Obtener total de la solicitud
     public function getTotal($idsol) {
         try {
-            $sql = "SELECT SUM(totdet) as total FROM detentrada 
+            $sql = "SELECT SUM(cantdet * vundet) as total FROM detentrada 
                     WHERE idsol = :idsol AND idemp = :idemp";
             
             $modelo = new conexion();
@@ -91,8 +96,49 @@ class Msoent {
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return $result['total'] ?? 0;
         } catch (PDOException $e) {
-            error_log("Error en getTotal: " . $e->getMessage());
+            error_log("Error en Msoent::getTotal() - " . $e->getMessage());
             return 0;
+        }
+    }
+
+    // Aprobar solicitud y crear movimientos en Kardex
+    public function aprobarSolicitud($idsol, $idkar, $idubi, $idusu) {
+        try {
+            $modelo = new conexion();
+            $conexion = $modelo->get_conexion();
+            $conexion->beginTransaction();
+            
+            $detalles = $this->getAll($idsol);
+            
+            if (empty($detalles)) {
+                throw new Exception("No hay detalles para aprobar");
+            }
+            
+            foreach ($detalles as $detalle) {
+                $sqlMov = "INSERT INTO movim (idkar, idprod, idubi, idusu, idemp, tipmov, cantmov, valmov, fecmov, fec_crea)
+                          VALUES (:idkar, :idprod, :idubi, :idusu, :idemp, 1, :cantmov, :valmov, NOW(), NOW())";
+                
+                $stmtMov = $conexion->prepare($sqlMov);
+                $stmtMov->execute([
+                    ':idkar' => $idkar,
+                    ':idprod' => $detalle['idprod'],
+                    ':idubi' => $idubi,
+                    ':idusu' => $idusu,
+                    ':idemp' => $this->idemp,
+                    ':cantmov' => $detalle['cantdet'],
+                    ':valmov' => $detalle['vundet']
+                ]);
+            }
+            
+            $conexion->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            if (isset($conexion)) {
+                $conexion->rollBack();
+            }
+            error_log("Error en Msoent::aprobarSolicitud() - " . $e->getMessage());
+            return false;
         }
     }
 }

@@ -7,6 +7,7 @@
 
 require_once('conexion.php');
 require_once('../controllers/misfun.php'); // Asume que incluye generar_hash_contrasena()
+require_once('maud.php'); // Incluir modelo de auditoría
 
 $usu = isset($_POST['usu']) ? $_POST['usu'] : NULL; // Email o usuario
 $pas = isset($_POST['pas']) ? $_POST['pas'] : NULL;
@@ -21,6 +22,11 @@ function validar($usu, $pas) {
     // Llama a la función que trae los datos de usuario y empresa
     $res = verdat($usu, $pas);
     
+    // Instanciar auditoría
+    $maud = new MAud();
+    $ip = $_SERVER['REMOTE_ADDR'];
+    $navegador = $_SERVER['HTTP_USER_AGENT'];
+    
     // Si la consulta devolvió resultados
     if ($res) {
         $usuario_data = $res[0];
@@ -28,6 +34,8 @@ function validar($usu, $pas) {
         // 🎯 NUEVA VALIDACIÓN DE ESTADO 🎯
         // Si el usuario (u.act) está inactivo (0), se bloquea el acceso.
         if ($usuario_data['usu_act'] == 0) {
+            // Registrar intento fallido (usuario inactivo)
+            $maud->registrarLogin($usuario_data['idemp'] ?? NULL, $usuario_data['idusu'], $usu, 0, $ip, $navegador);
             echo '<script>window.location="../index.php?err=inactivo_usu";</script>';
             return;
         }
@@ -36,6 +44,8 @@ function validar($usu, $pas) {
         // y la empresa (e.act) está inactiva (0), se bloquea el acceso.
         // El Superadmin (idper=1) no debe ser bloqueado por el estado de la empresa.
         if ($usuario_data['idper'] != 1 && $usuario_data['emp_act'] == 0) {
+            // Registrar intento fallido (empresa inactiva)
+            $maud->registrarLogin($usuario_data['idemp'], $usuario_data['idusu'], $usu, 0, $ip, $navegador);
             echo '<script>window.location="../index.php?err=inactivo_emp";</script>';
             return;
         }
@@ -59,10 +69,15 @@ function validar($usu, $pas) {
         // Bandera de autenticación
         $_SESSION['aut']        = "askjhd654-+"; 
 
+        // Registrar login exitoso
+        $maud->registrarLogin($_SESSION['idemp'], $_SESSION['idusu'], $usu, 1, $ip, $navegador);
+
         // Redirigir al home
         echo '<script>window.location="../home.php";</script>';
     } else {
         // Error de credenciales (usuario/contraseña incorrectos)
+        // Registrar intento fallido
+        $maud->registrarLogin(NULL, NULL, $usu, 0, $ip, $navegador);
         echo '<script>window.location="../index.php?err=ok";</script>';
     }
 }
