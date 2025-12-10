@@ -274,12 +274,13 @@ CREATE TABLE auditoria (
 
 CREATE TABLE lote (
     idlote INT(10) PRIMARY KEY AUTO_INCREMENT,
-    idprod INT(10),          -- Producto asociado
-    codlote VARCHAR(50),     -- Código o referencia del lote
-    fecven DATE,             -- Fecha de vencimiento (opcional)
-    cant INT,                -- Cantidad disponible en el lote
-    fec_crea DATETIME,
-    fec_actu DATETIME
+    idprod INT(10),             -- Producto asociado
+    codlot VARCHAR(50),         -- Número del lote
+    fecing DATETIME,            -- Fecha de ingreso
+    fecven DATE,                -- Fecha de vencimiento
+    cstuni DECIMAL(12,4),       -- Costo unitario
+    cantini DECIMAL(10,2),      -- Cantidad inicial
+    cantact DECIMAL(10,2)       -- Cantidad actual
 );
 
 -- INDICES --
