@@ -1,73 +1,82 @@
 <?php
-require_once __DIR__ . '/../models/msosal.php';
-require_once __DIR__ . '/../models/mprod.php';
+include("models/msosal.php"); 
+include("models/mubi.php");        // si manejas ubicaciones (almacén)
+include("models/musu.php");    // si usas usuario
+include("models/memp.php");    // empresa
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+$msalida = new Msalida();
+$mubi    = new Mubi();
+$musu    = new Musuario();
+$memp    = new Mempresa();
+
+$idsal  = isset($_REQUEST['idsal'])  ? $_REQUEST['idsal']  : NULL;
+$fecsal = isset($_POST['fecsal'])    ? $_POST['fecsal']    : NULL;
+$tpsal  = isset($_POST['tpsal'])     ? $_POST['tpsal']     : NULL;
+$idemp  = isset($_POST['idemp'])     ? $_POST['idemp']     : NULL;
+$idusu  = isset($_POST['idusu'])     ? $_POST['idusu']     : NULL;
+$idubi  = isset($_POST['idubi'])     ? $_POST['idubi']     : NULL;
+$refdoc = isset($_POST['refdoc'])    ? $_POST['refdoc']    : NULL;
+$estado = isset($_POST['estado'])    ? $_POST['estado']    : NULL;
+$ope    = isset($_REQUEST['ope'])    ? $_REQUEST['ope']    : NULL;
+
+$dtOne = NULL;
+
+// ===============================================================
+//  CARGAR DATOS PARA SELECTS
+// ===============================================================
+$ubi  = $mubi->getAll();      // Ubicaciones (almacenes)
+$emp  = $memp->getAll();      // Empresas
+$usu  = $musu->getAll();      // Usuarios
+
+$msalida->setIdsal($idsal);
+
+// ===============================================================
+//  GUARDAR O EDITAR
+// ===============================================================
+
+if ($ope == "SaVe" && $idsal) {
+    // Edición
+    $msalida->setFecsal($fecsal);
+    $msalida->setTpsal($tpsal);
+    $msalida->setIdemp($idemp);
+    $msalida->setIdusu($idusu);
+    $msalida->setIdubi($idubi);
+    $msalida->setRefdoc($refdoc);
+    $msalida->setEstado($estado);
+    $msalida->edit();
+
+} elseif ($ope == "SaVe" && !$idsal) {
+    // Nuevo registro
+    $msalida->setFecsal($fecsal);
+    $msalida->setTpsal($tpsal);
+    $msalida->setIdemp($idemp);
+    $msalida->setIdusu($idusu);
+    $msalida->setIdubi($idubi);
+    $msalida->setRefdoc($refdoc);
+    $msalida->setEstado($estado ?? "Creada");
+    $msalida->save();
 }
 
-$msosal = new Msosal();
-$msosal->setIdemp($_SESSION['idemp']); // empresa activa
+// ===============================================================
+//  ELIMINAR
+// ===============================================================
 
-$idsol = isset($_GET['idsol']) ? $_GET['idsol'] : null;
-$ope   = isset($_POST['ope']) ? $_POST['ope'] : null;
-
-// Guardar
-if ($ope == "save") {
-    $idprod = $_POST['idprod'];
-    $cantdet = $_POST['cantdet'];
-    $vundet = $_POST['vundet'];
-    
-    // Verificar stock disponible
-    if ($msosal->verificarStockDisponible($idprod, $cantdet)) {
-        $data = [
-            ":idsol"   => $_POST['idsol'],
-            ":idprod"  => $idprod,
-            ":cantdet" => $cantdet,
-            ":vundet"  => $vundet,
-            ":totdet"  => ($cantdet * $vundet),
-            ":idemp"   => $_SESSION['idemp']
-        ];
-        
-        if ($msosal->save($data)) {
-            $_SESSION['mensaje'] = "Producto agregado exitosamente";
-            $_SESSION['tipo_mensaje'] = "success";
-        } else {
-            $_SESSION['mensaje'] = "Error al agregar el producto";
-            $_SESSION['tipo_mensaje'] = "danger";
-        }
-    } else {
-        $_SESSION['mensaje'] = "Stock insuficiente para realizar la salida";
-        $_SESSION['tipo_mensaje'] = "warning";
-    }
-    
-    // Redireccionar para evitar resubmisión del formulario
-    header("Location: dashboard.php?pg=2070&idsol=" . $idsol);
-    exit();
+if ($ope == "eLi" && $idsal) {
+    $msalida->del();
 }
 
-// Eliminar detalle
-if (isset($_GET['delete']) && $_GET['delete']) {
-    $iddet = $_GET['delete'];
-    if ($msosal->delete($iddet)) {
-        $_SESSION['mensaje'] = "Producto eliminado exitosamente";
-        $_SESSION['tipo_mensaje'] = "success";
-    } else {
-        $_SESSION['mensaje'] = "Error al eliminar el producto";
-        $_SESSION['tipo_mensaje'] = "danger";
-    }
-    
-    header("Location: dashboard.php?pg=2070&idsol=" . $idsol);
-    exit();
+// ===============================================================
+//  EDITAR → cargar un registro
+// ===============================================================
+
+if ($ope == "eDi" && $idsal) {
+    $dtOne = $msalida->getOne();
 }
 
-// Traer productos para el select (solo con stock disponible)
-$mprod = new MProd();
-$productos = $mprod->getAll(); // Puedes filtrar solo productos con stock > 0
+// ===============================================================
+//  LISTA GENERAL
+// ===============================================================
 
-// Traer detalles de la solicitud actual
-$detalles = [];
-if ($idsol) {
-    $detalles = $msosal->getAll($idsol);
-}
+$dtAll = $msalida->getAll();
+
 ?>
