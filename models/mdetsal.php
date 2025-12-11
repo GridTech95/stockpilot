@@ -1,133 +1,163 @@
 <?php
 class Mdetsal {
-    // Atributos
+
     private $iddet;
     private $idemp;
-    private $idsol;
+    private $idsal;
     private $idprod;
     private $cantdet;
     private $vundet;
-    private $fec_crea;
-    private $fec_actu;
+    private $totdet;
+    private $idlote;
+    private $idmov;
 
-    // Getters
+    // GETTERS
     function getIddet(){ return $this->iddet; }
     function getIdemp(){ return $this->idemp; }
-    function getIdsol(){ return $this->idsol; }
+    function getIdsal(){ return $this->idsal; }
     function getIdprod(){ return $this->idprod; }
     function getCantdet(){ return $this->cantdet; }
     function getVundet(){ return $this->vundet; }
-    function getFec_crea(){ return $this->fec_crea; }
-    function getFec_actu(){ return $this->fec_actu; }
+    function getTotdet(){ return $this->totdet; }
+    function getIdlote(){ return $this->idlote; }
+    function getIdmov(){ return $this->idmov; }
 
-    // Setters
-    function setIddet($iddet){ $this->iddet = $iddet; }
-    function setIdemp($idemp){ $this->idemp = $idemp; }
-    function setIdsol($idsol){ $this->idsol = $idsol; }
-    function setIdprod($idprod){ $this->idprod = $idprod; }
-    function setCantdet($cantdet){ $this->cantdet = $cantdet; }
-    function setVundet($vundet){ $this->vundet = $vundet; }
-    function setFec_crea($fec_crea){ $this->fec_crea = $fec_crea; }
-    function setFec_actu($fec_actu){ $this->fec_actu = $fec_actu; }
+    // SETTERS
+    function setIddet($v){ $this->iddet = $v; }
+    function setIdemp($v){ $this->idemp = $v; }
+    function setIdsal($v){ $this->idsal = $v; }
+    function setIdprod($v){ $this->idprod = $v; }
+    function setCantdet($v){ $this->cantdet = $v; }
+    function setVundet($v){ $this->vundet = $v; }
+    function setTotdet($v){ $this->totdet = $v; }
+    function setIdlote($v){ $this->idlote = $v; }
+    function setIdmov($v){ $this->idmov = $v; }
 
-    // Obtener todos por solicitud
+    // CARGA MASIVA
+    public function setData($d){
+        if(isset($d['iddet']))   $this->setIddet($d['iddet']);
+        if(isset($d['idemp']))   $this->setIdemp($d['idemp']);
+        if(isset($d['idsal']))   $this->setIdsal($d['idsal']);
+        if(isset($d['idprod']))  $this->setIdprod($d['idprod']);
+        if(isset($d['cantdet'])) $this->setCantdet($d['cantdet']);
+        if(isset($d['vundet']))  $this->setVundet($d['vundet']);
+        if(isset($d['totdet']))  $this->setTotdet($d['totdet']);
+        if(isset($d['idlote']))  $this->setIdlote($d['idlote']);
+        if(isset($d['idmov']))   $this->setIdmov($d['idmov']);
+    }
+
+    // LISTAR TODOS
     public function getAll(){
         try{
-            $sql = "SELECT d.*, p.nomprod 
+            $sql = "SELECT d.*, p.nomprod, l.codlot 
                     FROM detsalida d
-                    INNER JOIN producto p ON d.idprod = p.idprod
-                    WHERE d.idsol = :idsol";
-            $modelo = new conexion();
-            $conexion = $modelo->get_conexion();
-            $res = $conexion->prepare($sql);
-            $idsol = $this->getIdsol();
-            $res->bindParam(":idsol", $idsol);
-            $res->execute();
-            return $res->fetchAll(PDO::FETCH_ASSOC);
-        }catch(Exception $e){
-            men($e);
+                    LEFT JOIN producto p ON d.idprod = p.idprod
+                    LEFT JOIN lote l ON d.idlote = l.idlote
+                    ORDER BY d.iddet DESC";
+
+            $cn = (new conexion())->get_conexion();
+            $st = $cn->prepare($sql);
+            $st->execute();
+            return $st->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch(Exception $e){
+            return [];
         }
     }
 
-    // Obtener uno
+    // OBTENER UNO
     public function getOne(){
         try{
-            $sql = "SELECT * FROM detsalida WHERE iddet=:iddet";
-            $modelo = new conexion();
-            $conexion = $modelo->get_conexion();
-            $res = $conexion->prepare($sql);
-            $iddet = $this->getIddet();
-            $res->bindParam(":iddet", $iddet);
-            $res->execute();
-            return $res->fetch(PDO::FETCH_ASSOC);
-        }catch(Exception $e){
-            men($e);
+            $sql = "SELECT d.*, p.nomprod, l.codlot 
+                    FROM detsalida d
+                    LEFT JOIN producto p ON d.idprod = p.idprod
+                    LEFT JOIN lote l ON d.idlote = l.idlote
+                    WHERE d.iddet=:iddet";
+
+            $cn = (new conexion())->get_conexion();
+            $st = $cn->prepare($sql);
+            $st->bindParam(":iddet", $this->iddet);
+            $st->execute();
+            return $st->fetch(PDO::FETCH_ASSOC);
+
+        } catch(Exception $e){
+            return null;
         }
     }
 
-    // Guardar
+    // GUARDAR
     public function save(){
         try{
-            $sql = "INSERT INTO detsalida (idemp, idsol, idprod, cantdet, vundet, fec_crea, fec_actu)
-                    VALUES(:idemp, :idsol, :idprod, :cantdet, :vundet, :fec_crea, :fec_actu)";
-            $modelo = new conexion();
-            $conexion = $modelo->get_conexion();
-            $res = $conexion->prepare($sql);
+            $sql = "INSERT INTO detsalida(idemp, idsal, idprod, cantdet, vundet, totdet, idlote, idmov)
+                    VALUES(:idemp, :idsal, :idprod, :cantdet, :vundet, :totdet, :idlote, :idmov)";
 
-            $res->bindParam(":idemp", $this->idemp);
-            $res->bindParam(":idsol", $this->idsol);
-            $res->bindParam(":idprod", $this->idprod);
-            $res->bindParam(":cantdet", $this->cantdet);
-            $res->bindParam(":vundet", $this->vundet);
-            $res->bindParam(":fec_crea", $this->fec_crea);
-            $res->bindParam(":fec_actu", $this->fec_actu);
+            $cn = (new conexion())->get_conexion();
+            $st = $cn->prepare($sql);
 
-            $res->execute();
-            men("save");
-        }catch(Exception $e){
-            men($e);
+            $st->bindParam(":idemp",   $this->idemp);
+            $st->bindParam(":idsal",   $this->idsal);
+            $st->bindParam(":idprod",  $this->idprod);
+            $st->bindParam(":cantdet", $this->cantdet);
+            $st->bindParam(":vundet",  $this->vundet);
+            $st->bindParam(":totdet",  $this->totdet);
+            $st->bindParam(":idlote",  $this->idlote);
+            $st->bindParam(":idmov",   $this->idmov);
+
+            $st->execute();
+            return true;
+
+        } catch(Exception $e){
+            error_log("Error en save detalle: " . $e->getMessage());
+            return false;
         }
     }
 
-    // Actualizar
-    public function upd(){
+    // EDITAR
+    public function edit(){
         try{
-            $sql = "UPDATE detsalida 
-                    SET idemp=:idemp, idsol=:idsol, idprod=:idprod, cantdet=:cantdet, 
-                        vundet=:vundet, fec_actu=:fec_actu 
+            $sql = "UPDATE detsalida SET
+                        idemp=:idemp,
+                        idsal=:idsal,
+                        idprod=:idprod,
+                        cantdet=:cantdet,
+                        vundet=:vundet,
+                        idlote=:idlote,
+                        idmov=:idmov
                     WHERE iddet=:iddet";
-            $modelo = new conexion();
-            $conexion = $modelo->get_conexion();
-            $res = $conexion->prepare($sql);
 
-            $res->bindParam(":iddet", $this->iddet);
-            $res->bindParam(":idemp", $this->idemp);
-            $res->bindParam(":idsol", $this->idsol);
-            $res->bindParam(":idprod", $this->idprod);
-            $res->bindParam(":cantdet", $this->cantdet);
-            $res->bindParam(":vundet", $this->vundet);
-            $res->bindParam(":fec_actu", $this->fec_actu);
+            $cn = (new conexion())->get_conexion();
+            $st = $cn->prepare($sql);
 
-            $res->execute();
-            men("upd");
-        }catch(Exception $e){
-            men($e);
+            $st->bindParam(":iddet",   $this->iddet);
+            $st->bindParam(":idemp",   $this->idemp);
+            $st->bindParam(":idsal",   $this->idsal);
+            $st->bindParam(":idprod",  $this->idprod);
+            $st->bindParam(":cantdet", $this->cantdet);
+            $st->bindParam(":vundet",  $this->vundet);
+            $st->bindParam(":idlote",  $this->idlote);
+            $st->bindParam(":idmov",   $this->idmov);
+
+            $st->execute();
+            return true;
+
+        } catch(Exception $e){
+            return false;
         }
     }
 
-    // Eliminar
+    // ELIMINAR
     public function del(){
         try{
             $sql = "DELETE FROM detsalida WHERE iddet=:iddet";
-            $modelo = new conexion();
-            $conexion = $modelo->get_conexion();
-            $res = $conexion->prepare($sql);
-            $iddet = $this->getIddet();
-            $res->bindParam(":iddet", $iddet);
-            $res->execute();
-            men("del");
-        }catch(Exception $e){
-            men($e);
+
+            $cn = (new conexion())->get_conexion();
+            $st = $cn->prepare($sql);
+            $st->bindParam(":iddet", $this->iddet);
+            $st->execute();
+            return true;
+
+        } catch(Exception $e){
+            return false;
         }
     }
 }

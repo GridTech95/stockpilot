@@ -1,66 +1,96 @@
 <?php
-include("models/mdetsal.php");
+require_once "models/mdetsal.php";
 
-$mdet = new Mdetsal();
+// Capturar parámetros
+$iddet   = isset($_REQUEST['iddet'])   ? $_REQUEST['iddet']   : NULL;
+$idemp   = isset($_POST['idemp'])      ? $_POST['idemp']      : NULL;
+$idsal   = isset($_POST['idsal'])      ? $_POST['idsal']      : NULL;
+$idprod  = isset($_POST['idprod'])     ? $_POST['idprod']     : NULL;
+$cantdet = isset($_POST['cantdet'])    ? $_POST['cantdet']    : NULL;
+$vundet  = isset($_POST['vundet'])     ? $_POST['vundet']     : NULL;
+$idlote  = isset($_POST['idlote'])     ? $_POST['idlote']     : NULL;
+$idmov   = isset($_POST['idmov'])      ? $_POST['idmov']      : NULL;
+$ope     = isset($_REQUEST['ope'])     ? $_REQUEST['ope']     : NULL;
+$delete  = isset($_REQUEST['delete'])  ? $_REQUEST['delete']  : NULL;
 
-// Variables recibidas
-$iddet    = isset($_REQUEST['iddet']) ? intval($_REQUEST['iddet']) : null;
-$idemp    = isset($_POST['idemp']) ? intval($_POST['idemp']) : null;
-$idsol    = isset($_REQUEST['idsol']) ? intval($_REQUEST['idsol']) : null;
-$idprod   = isset($_POST['idprod']) ? intval($_POST['idprod']) : null;
-$cantdet  = isset($_POST['cantdet']) ? intval($_POST['cantdet']) : null;
-$vundet   = isset($_POST['vundet']) ? $_POST['vundet'] : null;
-$fec_crea = date("Y-m-d H:i:s");
-$fec_actu = date("Y-m-d H:i:s");
-$ope      = isset($_REQUEST['ope']) ? $_REQUEST['ope'] : null;
+// Instanciar modelo
+$mdetsal = new Mdetsal();
 
-// Inicializar variables usadas por la vista (evita "undefined variable")
-$dtOne = null;
-$dtAll = [];
+$dtOne = NULL;
 
-// Set IDs
-$mdet->setIddet($iddet);
-$mdet->setIdsol($idsol);
+// ===============================================================
+//  GUARDAR NUEVO DETALLE
+// ===============================================================
 
-// Guardar (crear/editar)
-if($ope === "save" && $idemp && $idsol && $idprod && $cantdet){
-    $mdet->setIdemp($idemp);
-    $mdet->setIdsol($idsol);
-    $mdet->setIdprod($idprod);
-    $mdet->setCantdet($cantdet);
-    $mdet->setVundet($vundet);
-    $mdet->setFec_crea($fec_crea);
-    $mdet->setFec_actu($fec_actu);
-
-    if($iddet){
-        $mdet->upd();
+if ($ope == "save" && !$iddet) {
+    $mdetsal->setIdemp($idemp);
+    $mdetsal->setIdsal($idsal);
+    $mdetsal->setIdprod($idprod);
+    $mdetsal->setCantdet($cantdet);
+    $mdetsal->setVundet($vundet);
+    $mdetsal->setIdlote($idlote);
+    $mdetsal->setIdmov($idmov);
+    
+    if($mdetsal->save()){
+        $_SESSION['mensaje'] = "Detalle guardado correctamente";
+        $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $mdet->save();
+        $_SESSION['mensaje'] = "Error al guardar el detalle";
+        $_SESSION['tipo_mensaje'] = "danger";
     }
 }
 
-// Eliminar (por parámetro delete)
-if(isset($_GET['delete']) && intval($_GET['delete'])){
-    $mdet->setIddet(intval($_GET['delete']));
-    $mdet->del();
-}
+// ===============================================================
+//  EDITAR DETALLE EXISTENTE
+// ===============================================================
 
-// Editar (traer uno para llenar el formulario)
-if($ope === "eDi" && $iddet){
-    $mdet->setIddet($iddet);
-   $dtOne = $mdet->getOne(); // retorna array asociativo o null
-}
-
-// Listar: si se pasó idsol listamos por solicitud, si no intentamos getAll() si existe
-if($idsol){
-    $mdet->setIdsol($idsol);
-    $dtAll = $mdet->getIdsol(); // listado de detalles para esa solicitud
-} else {
-    // Si tu modelo tiene getAll() (recomendado), lo usamos; si no, dejamos vacío
-    if(method_exists($mdet, 'getAll')){
-        $dtAll = $mdet->getAll();
+if ($ope == "save" && $iddet) {
+    $mdetsal->setIddet($iddet);
+    $mdetsal->setIdemp($idemp);
+    $mdetsal->setIdsal($idsal);
+    $mdetsal->setIdprod($idprod);
+    $mdetsal->setCantdet($cantdet);
+    $mdetsal->setVundet($vundet);
+    $mdetsal->setIdlote($idlote);
+    $mdetsal->setIdmov($idmov);
+    
+    if($mdetsal->edit()){
+        $_SESSION['mensaje'] = "Detalle actualizado correctamente";
+        $_SESSION['tipo_mensaje'] = "success";
     } else {
-        $dtAll = [];
+        $_SESSION['mensaje'] = "Error al actualizar el detalle";
+        $_SESSION['tipo_mensaje'] = "danger";
     }
 }
+
+// ===============================================================
+//  ELIMINAR DETALLE
+// ===============================================================
+
+if ($delete) {
+    $mdetsal->setIddet($delete);
+    if($mdetsal->del()){
+        $_SESSION['mensaje'] = "Detalle eliminado correctamente";
+        $_SESSION['tipo_mensaje'] = "success";
+    } else {
+        $_SESSION['mensaje'] = "Error al eliminar el detalle";
+        $_SESSION['tipo_mensaje'] = "danger";
+    }
+}
+
+// ===============================================================
+//  CARGAR UN DETALLE PARA EDITAR
+// ===============================================================
+
+if ($ope == "eDi" && $iddet) {
+    $mdetsal->setIddet($iddet);
+    $dtOne = $mdetsal->getOne();
+}
+
+// ===============================================================
+//  LISTA GENERAL DE DETALLES
+// ===============================================================
+
+$dtAll = $mdetsal->getAll();
+
 ?>

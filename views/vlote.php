@@ -1,11 +1,11 @@
 <?php 
-include_once ('controllers/clote.php');
+include_once('controllers/clote.php');
 ?>
-
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3><i class="fa-solid fa-boxes-stacked text-primary"></i> Gestión de Lotes</h3>
+
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLote">
             <i class="fa-solid fa-plus"></i> Nuevo Lote
         </button>
@@ -27,31 +27,37 @@ include_once ('controllers/clote.php');
                     <th>Acciones</th>
                 </tr>
             </thead>
+
             <tbody>
-                <?php if ($dtAll && count($dtAll) > 0): ?>
+                <?php if (!empty($dtAll)): ?>
                     <?php foreach ($dtAll as $l): ?>
-                    <tr>
-                        <td><?= $l['idlote'] ?></td>
-                        <td><?= htmlspecialchars($l['nomprod'] ?? 'Sin producto') ?></td>
-                        <td><?= htmlspecialchars($l['codlot']) ?></td>
-                        <td><?= date('d/m/Y H:i', strtotime($l['fecing'])) ?></td>
-                        <td><?= date('d/m/Y H:i', strtotime($l['fecven'])) ?></td>
-                        <td><?= number_format($l['cantini'], 2) ?></td>
-                        <td><?= number_format($l['cantact'], 2) ?></td>
-                        <td><?= number_format($l['cstuni'], 2) ?></td>
-                        <td>
-                            <a href="home.php?pg=<?= $pg; ?>&idlote=<?= $l['idlote']; ?>&ope=edi" 
-                                class="btn btn-sm btn-outline-warning me-2" title="Editar">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
-                            <a href="javascript:void(0);"
-                               onclick="confirmarEliminacion('home.php?pg=<?= $pg; ?>&idlote=<?= $l['idlote']; ?>&ope=eli')"
-                               class="btn btn-sm btn-outline-danger" title="Eliminar">
-                                <i class="fa-solid fa-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td><?= $l['idlote'] ?></td>
+                            <td><?= htmlspecialchars($l['nomprod'] ?? 'Sin producto') ?></td>
+                            <td><?= htmlspecialchars($l['codlot']) ?></td>
+
+                            <td><?= $l['fecing'] ? date('d/m/Y H:i', strtotime($l['fecing'])) : '' ?></td>
+                            <td><?= $l['fecven'] ? date('d/m/Y H:i', strtotime($l['fecven'])) : '' ?></td>
+
+                            <td><?= number_format($l['cantini'], 2) ?></td>
+                            <td><?= number_format($l['cantact'], 2) ?></td>
+                            <td><?= number_format($l['cstuni'], 2) ?></td>
+
+                            <td>
+                                <a href="home.php?pg=<?= $pg ?>&idlote=<?= $l['idlote'] ?>&ope=edi"
+                                   class="btn btn-sm btn-outline-warning me-2" title="Editar">
+                                   <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+
+                                <a href="javascript:void(0);"
+                                   onclick="confirmarEliminacion('home.php?pg=<?= $pg ?>&idlote=<?= $l['idlote'] ?>&ope=eli')"
+                                   class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                   <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
                     <?php endforeach; ?>
+
                 <?php else: ?>
                     <tr>
                         <td colspan="9" class="text-center text-muted">No hay lotes registrados</td>
@@ -65,9 +71,9 @@ include_once ('controllers/clote.php');
 <!-- ============= MODAL ============= -->
 <div class="modal fade" id="modalLote" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
 
-            <form action="home.php?pg=<?= $pg; ?>" method="POST">
+        <div class="modal-content">
+            <form action="home.php?pg=<?= $pg ?>" method="POST">
                 <input type="hidden" name="ope" value="save">
                 <input type="hidden" name="idlote" value="<?= $dtOne['idlote'] ?? '' ?>">
 
@@ -76,6 +82,7 @@ include_once ('controllers/clote.php');
                         <i class="fa-solid fa-box"></i>
                         <?= isset($dtOne) ? 'Editar Lote #'.$dtOne['idlote'] : 'Nuevo Lote' ?>
                     </h5>
+
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
@@ -87,9 +94,10 @@ include_once ('controllers/clote.php');
                             <label class="form-label fw-bold">Producto *</label>
                             <select name="idprod" class="form-select" required>
                                 <option value="">Seleccione producto...</option>
+
                                 <?php foreach ($productos as $p): ?>
                                     <option value="<?= $p['idprod'] ?>"
-                                        <?= (isset($dtOne) && $dtOne['idprod'] == $p['idprod']) ? 'selected' : '' ?>>
+                                        <?= isset($dtOne) && $dtOne['idprod'] == $p['idprod'] ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($p['nomprod']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -100,47 +108,47 @@ include_once ('controllers/clote.php');
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Código del Lote *</label>
                             <input type="text" name="codlot" class="form-control"
-                                value="<?= $dtOne['codlot'] ?? '' ?>" required>
+                                   value="<?= $dtOne['codlot'] ?? '' ?>" required>
                         </div>
 
                         <!-- FECHA INGRESO -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Fecha Ingreso *</label>
                             <input type="datetime-local" name="fecing" class="form-control"
-                                value="<?= isset($dtOne)
-                                    ? date('Y-m-d\TH:i', strtotime($dtOne['fecing']))
-                                    : date('Y-m-d\TH:i') ?>" required>
+                                   value="<?= isset($dtOne)
+                                        ? date('Y-m-d\TH:i', strtotime($dtOne['fecing']))
+                                        : date('Y-m-d\TH:i') ?>" required>
                         </div>
 
-                        <!-- FECHA VENCIMIENTO +1 MES -->
+                        <!-- FECHA VENCIMIENTO -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Fecha Vencimiento *</label>
                             <input type="datetime-local" name="fecven" class="form-control"
-                                value="<?= isset($dtOne)
-                                    ? date('Y-m-d\TH:i', strtotime($dtOne['fecven']))
-                                    : date('Y-m-d\TH:i', strtotime('+1 month')) ?>" required>
+                                   value="<?= isset($dtOne)
+                                        ? date('Y-m-d\TH:i', strtotime($dtOne['fecven']))
+                                        : date('Y-m-d\TH:i', strtotime('+1 month')) ?>" required>
                         </div>
 
                         <!-- CANT INICIAL -->
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">Cantidad Inicial *</label>
                             <input type="number" step="0.01" name="cantini" class="form-control"
-                                value="<?= $dtOne['cantini'] ?? '' ?>" required>
+                                   value="<?= $dtOne['cantini'] ?? '' ?>" required>
                         </div>
 
                         <!-- CANT ACTUAL -->
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-bold">Cantidad Actual</label>
                             <input type="number" step="0.01" name="cantact" class="form-control"
-                                value="<?= $dtOne['cantact'] ?? ($dtOne['cantini'] ?? '') ?>">
+                                   value="<?= $dtOne['cantact'] ?? ($dtOne['cantini'] ?? '') ?>">
                             <small class="text-muted">Al crear nuevo = cantidad inicial</small>
                         </div>
 
-                        <!-- COSTO -->
+                        <!-- COSTO UNITARIO -->
                         <div class="col-md-4 mb-3">
-                            <label class="form-label fw-bold">Costo Unitario</label>
+                            <label class="form-label fw-bold">Costo Unitario *</label>
                             <input type="number" step="0.01" name="cstuni" class="form-control"
-                                value="<?= $dtOne['cstuni'] ?? '0.00' ?>">
+                                   value="<?= $dtOne['cstuni'] ?? '0.00' ?>" required>
                         </div>
 
                     </div>
@@ -150,52 +158,42 @@ include_once ('controllers/clote.php');
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fa-solid fa-xmark"></i> Cancelar
                     </button>
+
                     <button type="submit" class="btn btn-primary">
                         <i class="fa-solid fa-save"></i> Guardar Lote
                     </button>
                 </div>
-
             </form>
         </div>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+// Mostrar alertas según acciones
 document.addEventListener("DOMContentLoaded", function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const msg = urlParams.get('msg');
 
-    if (msg === 'saved') {
-        Swal.fire({
-            icon: 'success',
-            title: '¡Guardado exitosamente!',
-            text: 'El lote se ha registrado correctamente.',
-            confirmButtonColor: '#198754'
-        });
-    }
+    const msg = new URLSearchParams(window.location.search).get('msg');
 
-    if (msg === 'updated') {
+    const alertas = {
+        'saved':  {icon:'success', title:'Guardado exitosamente',   text:'El lote se ha registrado.'},
+        'updated':{icon:'info',    title:'Actualización exitosa',  text:'El lote se ha actualizado.'},
+        'deleted':{icon:'warning', title:'Eliminación exitosa',    text:'El lote ha sido eliminado.'}
+    };
+
+    if (alertas[msg]) {
         Swal.fire({
-            icon: 'info',
-            title: '¡Actualización exitosa!',
-            text: 'El lote se ha actualizado correctamente.',
+            icon: alertas[msg].icon,
+            title: alertas[msg].title,
+            text: alertas[msg].text,
             confirmButtonColor: '#0d6efd'
-        });
-    }
-
-    if (msg === 'deleted') {
-        Swal.fire({
-            icon: 'warning',
-            title: '¡Eliminación exitosa!',
-            text: 'El lote ha sido eliminado correctamente.',
-            confirmButtonColor: '#dc3545'
         });
     }
 });
 
-// Confirmación antes de eliminar
+// Confirmar antes de eliminar
 function confirmarEliminacion(url) {
     Swal.fire({
         title: '¿Estás seguro?',
@@ -206,28 +204,16 @@ function confirmarEliminacion(url) {
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
-    }).then((res) => {
-        if (res.isConfirmed) {
-            window.location.href = url;
-        }
-    });
+    }).then((r) => { if (r.isConfirmed) window.location.href = url; });
 }
 
-// Mostrar modal en edición (igual que vprod.php)
-document.addEventListener('DOMContentLoaded', function() {
-    const params = new URLSearchParams(window.location.search);
-    const ope = params.get('ope');
-
+// Abrir modal si es edición
+document.addEventListener("DOMContentLoaded", function() {
+    const ope = new URLSearchParams(window.location.search).get('ope');
     if (ope === 'edi') {
         const modalEl = document.getElementById('modalLote');
-        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const modal = new bootstrap.Modal(modalEl);
-            const title = modalEl.querySelector('.modal-title');
-            if (title) title.innerHTML = '<i class="fa-solid fa-box"></i> Editar Lote';
-            const submitBtn = modalEl.querySelector('button[type="submit"]');
-            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-save"></i> Actualizar';
-            modal.show();
-        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
     }
 });
 </script>

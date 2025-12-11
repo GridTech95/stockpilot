@@ -174,17 +174,14 @@ CREATE TABLE solentrada (
 );
 
 CREATE TABLE solsalida (
-    idsol INT(10) PRIMARY KEY AUTO_INCREMENT,
-    idemp INT(10),
-    idubi INT(10),
-    fecsol DATE,
-    estsol VARCHAR(20),
-    totsol DECIMAL(12,2),
-    obssol TEXT,
-    idusu INT(10),
-    idusu_apr INT(10),
-    fec_crea DATETIME,
-    fec_actu DATETIME
+    idsal INT(10) PRIMARY KEY AUTO_INCREMENT,
+    fecsal DATETIME NOT NULL,
+    tpsal VARCHAR(20) NOT NULL,
+    idemp INT(10) NOT NULL,
+    idusu INT(10) NOT NULL,
+    idubi INT(10) NOT NULL,
+    refdoc VARCHAR(50) NOT NULL,
+    estsal VARCHAR(15) NOT NULL DEFAULT 'Pendiente'
 );
 
 CREATE TABLE detentrada (
@@ -201,14 +198,13 @@ CREATE TABLE detentrada (
 
 CREATE TABLE detsalida (
     iddet INT(10) PRIMARY KEY AUTO_INCREMENT,
-    idemp INT(10),
-    idsol INT(10),
-    idprod INT(10),
-    cantdet INT,
-    vundet DECIMAL(10,2),
-    totdet DECIMAL(10,2) GENERATED ALWAYS AS (cantdet * vundet) STORED,
-    fec_crea DATETIME,
-    fec_actu DATETIME
+    idemp INT(10) NOT NULL,
+    idsal INT(10) NOT NULL,
+    idprod INT(10) NOT NULL,
+    cantdet INT NOT NULL,
+    vundet DECIMAL(12,4) NOT NULL,
+    idlote INT(10) DEFAULT NULL,
+    idmov INT(10) DEFAULT NULL
 );
 
 CREATE TABLE dominio (
@@ -273,14 +269,14 @@ CREATE TABLE auditoria (
 );
 
 CREATE TABLE lote (
-    idlote INT(10) PRIMARY KEY AUTO_INCREMENT,
-    idprod INT(10),             -- Producto asociado
-    codlot VARCHAR(50),         -- Número del lote
-    fecing DATETIME,            -- Fecha de ingreso
-    fecven DATE,                -- Fecha de vencimiento
-    cstuni DECIMAL(12,4),       -- Costo unitario
-    cantini DECIMAL(10,2),      -- Cantidad inicial
-    cantact DECIMAL(10,2)       -- Cantidad actual
+    idlote INT(10) PRIMARY KEY AUTO_INCREMENT ,
+    idprod INT(10) NOT NULL,
+    codlot VARCHAR(50) NOT NULL,
+    fecing DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecven DATE DEFAULT NULL,
+    cstuni DECIMAL(12,4) NOT NULL,
+    cantini DECIMAL(10,2) NOT NULL,
+    cantact DECIMAL(10,2) NOT NULL
 );
 
 -- INDICES --
@@ -324,14 +320,13 @@ ALTER TABLE solentrada ADD KEY fk_solent_idusuapr (idusu_apr);
 ALTER TABLE solsalida ADD KEY fk_solsal_idemp (idemp);
 ALTER TABLE solsalida ADD KEY fk_solsal_idubi (idubi);
 ALTER TABLE solsalida ADD KEY fk_solsal_idusu (idusu);
-ALTER TABLE solsalida ADD KEY fk_solsal_idusuapr (idusu_apr);
 
 ALTER TABLE detentrada ADD KEY fk_detent_idemp (idemp);
 ALTER TABLE detentrada ADD KEY fk_detent_idsol (idsol);
 ALTER TABLE detentrada ADD KEY fk_detent_idprod (idprod);
 
 ALTER TABLE detsalida ADD KEY fk_detsal_idemp (idemp);
-ALTER TABLE detsalida ADD KEY fk_detsal_idsol (idsol);
+ALTER TABLE detsalida ADD KEY fk_detsal_idsal (idsal);
 ALTER TABLE detsalida ADD KEY fk_detsal_idprod (idprod);
 
 ALTER TABLE valor ADD KEY fk_val_iddom (iddom);
@@ -379,21 +374,21 @@ ALTER TABLE solentrada
   ADD CONSTRAINT fk_solent_usu FOREIGN KEY (idusu) REFERENCES usuario(idusu),
   ADD CONSTRAINT fk_solent_usuapr FOREIGN KEY (idusu_apr) REFERENCES usuario(idusu);
 
-ALTER TABLE solsalida
-  ADD CONSTRAINT fk_solsal_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp),
-  ADD CONSTRAINT fk_solsal_ubi FOREIGN KEY (idubi) REFERENCES ubicacion(idubi),
-  ADD CONSTRAINT fk_solsal_usu FOREIGN KEY (idusu) REFERENCES usuario(idusu),
-  ADD CONSTRAINT fk_solsal_usuapr FOREIGN KEY (idusu_apr) REFERENCES usuario(idusu);
-
 ALTER TABLE detentrada
   ADD CONSTRAINT fk_detent_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp),
   ADD CONSTRAINT fk_detent_ids FOREIGN KEY (idsol) REFERENCES solentrada(idsol) ON DELETE CASCADE,
   ADD CONSTRAINT fk_detent_prod FOREIGN KEY (idprod) REFERENCES producto(idprod);
 
+ALTER TABLE solsalida
+  ADD CONSTRAINT fk_solsal_emp FOREIGN KEY (idemp) REFERENCES empresa (idemp),
+  ADD CONSTRAINT fk_solsal_usu FOREIGN KEY (idusu) REFERENCES usuario (idusu),
+  ADD CONSTRAINT fk_solsal_ubi FOREIGN KEY (idubi) REFERENCES ubicacion (idubi);
+
 ALTER TABLE detsalida
-  ADD CONSTRAINT fk_detsal_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp),
-  ADD CONSTRAINT fk_detsal_ids FOREIGN KEY (idsol) REFERENCES solsalida(idsol) ON DELETE CASCADE,
-  ADD CONSTRAINT fk_detsal_prod FOREIGN KEY (idprod) REFERENCES producto(idprod);
+  ADD CONSTRAINT fk_detsal_sal FOREIGN KEY (idsal) REFERENCES solsalida (idsal) ON DELETE CASCADE,
+  ADD CONSTRAINT fk_detsal_prod FOREIGN KEY (idprod) REFERENCES producto (idprod),
+  ADD CONSTRAINT fk_detsal_lote FOREIGN KEY (idlote) REFERENCES lote (idlote);
+
 
 ALTER TABLE valor ADD CONSTRAINT fkvldm FOREIGN KEY (iddom) REFERENCES dominio(iddom);
 ALTER TABLE pagina ADD CONSTRAINT fkpgmo FOREIGN KEY (idmod) REFERENCES modulo(idmod);
@@ -507,7 +502,7 @@ INSERT INTO `pagina` (`idpag`, `idmod`, `nompag`, `ruta`, `icono`, `orden`, `fec
 (1010, 1, 'Movimientos', 'views/vmovim.php', 'fa fa-exchange-alt', 10, '2025-11-02 02:13:56', NULL, 1),
 (1011, 1, 'Dominios', 'views/vdom.php', 'fa fa-database', 11, '2025-11-02 02:13:56', NULL, 1),
 (1012, 1, 'Valores', 'views/vval.php', 'fa fa-check-circle', 12, '2025-11-02 02:13:56', NULL, 1),
-(1013, 1, 'Solicitud Salida', 'views/vsolsal.php', 'fa fa-file-alt', 13, '2025-11-02 02:13:56', NULL, 1),
+(1013, 1, 'Solicitud Salida', 'views/sosal.php', 'fa fa-file-alt', 13, '2025-11-02 02:13:56', NULL, 1),
 (1014, 1, 'Detalle salida', 'views/vdetsal.php', 'fa fa-file-alt', 14, '2025-11-02 02:13:56', NULL, 1),
 (1015, 1, 'Solicitud entrada', 'views/vsoent.php', 'fa fa-file-alt', 15, '2025-11-02 02:13:56', NULL, 1),
 (1016, 1, 'Modulo', 'views/vmod.php', 'fa fa-file-alt', 16, '2025-11-02 02:13:56', NULL, 1),
@@ -550,18 +545,16 @@ INSERT INTO `usuario_empresa` (`idusu`, `idemp`, `fec_crea`) VALUES
 (12, 3, '2025-11-20 20:55:51'), -- Empleado -> Empresa 3
 (13, 3, '2025-11-21 07:08:29'), -- Empleado -> Empresa 3
 (9, 4, '2025-11-19 23:31:26'),  -- Empleado -> Empresa 4
-
 (5, 4, '2025-11-25 22:00:04'); -- Laura M. (Empleado Faltante) -> Empresa 4
--- Agregar idemp a la tabla dominio
-ALTER TABLE dominio ADD COLUMN idemp INT(10) AFTER desdom;
 
--- Agregar idemp a la tabla valor (si también lo necesitas)
-ALTER TABLE valor ADD COLUMN idemp INT(10) AFTER desval;
-
--- Crear índices para mejorar rendimiento
-ALTER TABLE dominio ADD KEY fk_dom_idemp (idemp);
-ALTER TABLE valor ADD KEY fk_val_idemp (idemp);
-
--- Agregar llaves foráneas
-ALTER TABLE dominio ADD CONSTRAINT fk_dom_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp);
-ALTER TABLE valor ADD CONSTRAINT fk_val_emp FOREIGN KEY (idemp) REFERENCES empresa(idemp);
+INSERT INTO lote (idprod, codlot, fecing, fecven, cstuni, cantini, cantact) VALUES
+(1, 'LOT-A1001', '2025-01-10 09:15:00', '2026-01-10', 12.5000, 100.00, 85.00),
+(1, 'LOT-A1002', '2025-02-05 14:30:00', '2026-02-05', 12.7500, 150.00, 150.00),
+(2, 'LOT-B2001', '2025-01-18 11:45:00', '2025-12-30', 8.3000, 200.00, 190.00),
+(2, 'LOT-B2002', '2025-03-02 10:10:00', '2026-03-02', 8.4500, 120.00, 118.00),
+(3, 'LOT-C3001', '2025-01-28 08:00:00', '2025-11-15', 5.9000, 300.00, 250.00),
+(3, 'LOT-C3002', '2025-04-01 16:25:00', '2026-04-01', 6.1000, 180.00, 178.00),
+(4, 'LOT-D4001', '2025-02-20 13:50:00', '2027-02-20', 15.2000, 75.00, 60.00),
+(4, 'LOT-D4002', '2025-03-25 09:40:00', '2026-12-30', 15.4500, 90.00, 90.00),
+(1, 'LOT-A1003', '2025-04-10 10:00:00', '2026-04-10', 13.0000, 50.00, 49.00),
+(2, 'LOT-B2003', '2025-05-01 12:20:00', '2026-05-01', 8.7000, 220.00, 215.00);
